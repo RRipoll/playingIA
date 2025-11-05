@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-// FIX: Import `Type` to use enum values for parameter types.
-import { FunctionResponseScheduling, Type } from '@google/genai';
+import { FunctionResponseScheduling } from '@google/genai';
 import { FunctionCall } from './state';
 
 export const AVAILABLE_TOOLS: FunctionCall[] = [
@@ -12,22 +11,18 @@ export const AVAILABLE_TOOLS: FunctionCall[] = [
     name: 'start_return',
     description: 'Starts the return process for an item, collecting necessary details from the user.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         orderId: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The ID of the order containing the item to be returned.',
         },
         itemName: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The name of the item the user wants to return.',
         },
         reason: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The reason the user is returning the item.',
         },
       },
@@ -40,22 +35,18 @@ export const AVAILABLE_TOOLS: FunctionCall[] = [
     name: 'get_order_status',
     description: 'Provides the current status of a user\'s order, searching by order ID or customer details.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         orderId: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The ID of the order to check. Ask for this first.',
         },
         customerName: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The name of the customer, if order ID is not available.',
         },
         customerEmail: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The email of the customer, if order ID is not available.',
         },
       },
@@ -67,12 +58,10 @@ export const AVAILABLE_TOOLS: FunctionCall[] = [
     name: 'speak_to_representative',
     description: 'Escalates the conversation to a human customer support representative.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         reason: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'A brief summary of the user\'s issue for the representative.',
         },
       },

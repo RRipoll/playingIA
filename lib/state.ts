@@ -11,10 +11,10 @@ import {
 import { DEFAULT_LIVE_API_MODEL, DEFAULT_VOICE } from './constants';
 // FIX: Import FunctionDeclaration and FunctionResponseScheduling to define the FunctionCall type.
 import {
-  FunctionDeclaration,
   FunctionResponse,
   FunctionResponseScheduling,
   LiveServerToolCall,
+  Schema,
 } from '@google/genai';
 
 /**
@@ -36,6 +36,7 @@ export const useSettings = create<{
   setVoice: voice => set({ voice }),
 }));
 
+
 /**
  * UI
  */
@@ -43,7 +44,7 @@ export const useUI = create<{
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 }>(set => ({
-  isSidebarOpen: false,
+  isSidebarOpen: true,
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
 }));
 
@@ -76,7 +77,11 @@ export const usePrompts = create<{
 }));
 
 // FIX: Define and export the FunctionCall interface. This was missing, causing import errors.
-export interface FunctionCall extends FunctionDeclaration {
+// Re-defined to avoid issues with `extends FunctionDeclaration` in this environment.
+export interface FunctionCall {
+  name: string;
+  description?: string;
+  parameters?: Schema;
   isEnabled: boolean;
   scheduling?: FunctionResponseScheduling;
 }
@@ -89,13 +94,21 @@ export interface LiveClientToolResponse {
 }
 export interface GroundingChunk {
   web?: {
-    // FIX: Make uri and title optional to match @google/genai's GroundingChunk type.
-    uri?: string;
-    title?: string;
+    uri: string;
+    title: string;
   };
+}
+export interface PronunciationFeedback {
+  overall_assessment: string;
+  words: Array<{
+    word: string;
+    accuracy: 'good' | 'needs_improvement' | 'incorrect';
+    feedback: string;
+  }>;
 }
 
 export interface ConversationTurn {
+  id: string;
   timestamp: Date;
   role: 'user' | 'agent' | 'system';
   text: string;
@@ -103,18 +116,24 @@ export interface ConversationTurn {
   toolUseRequest?: LiveServerToolCall;
   toolUseResponse?: LiveClientToolResponse;
   groundingChunks?: GroundingChunk[];
+  ipa?: string;
+  pronunciationFeedback?: PronunciationFeedback;
 }
 
 export const useLogStore = create<{
   turns: ConversationTurn[];
-  addTurn: (turn: Omit<ConversationTurn, 'timestamp'>) => void;
+  addTurn: (turn: Omit<ConversationTurn, 'timestamp' | 'id'>) => void;
   updateLastTurn: (update: Partial<ConversationTurn>) => void;
+  updateTurnById: (id: string, update: Partial<ConversationTurn>) => void;
   clearTurns: () => void;
 }>((set, get) => ({
   turns: [],
-  addTurn: (turn: Omit<ConversationTurn, 'timestamp'>) =>
+  addTurn: (turn: Omit<ConversationTurn, 'timestamp' | 'id'>) =>
     set(state => ({
-      turns: [...state.turns, { ...turn, timestamp: new Date() }],
+      turns: [
+        ...state.turns,
+        { ...turn, id: crypto.randomUUID(), timestamp: new Date() },
+      ],
     })),
   updateLastTurn: (update: Partial<Omit<ConversationTurn, 'timestamp'>>) => {
     set(state => {
@@ -126,6 +145,11 @@ export const useLogStore = create<{
       newTurns[newTurns.length - 1] = lastTurn;
       return { turns: newTurns };
     });
+  },
+  updateTurnById: (id: string, update: Partial<ConversationTurn>) => {
+    set(state => ({
+      turns: state.turns.map(t => (t.id === id ? { ...t, ...update } : t)),
+    }));
   },
   clearTurns: () => set({ turns: [] }),
 }));

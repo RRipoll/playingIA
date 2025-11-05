@@ -4,35 +4,29 @@
 */
 
 import { FunctionCall } from '../state';
-// FIX: Import `Type` to use enum values for parameter types.
-import { FunctionResponseScheduling, Type } from '@google/genai';
+import { FunctionResponseScheduling } from '@google/genai';
 
 export const personalAssistantTools: FunctionCall[] = [
   {
     name: 'create_calendar_event',
     description: 'Creates a new event in the user\'s calendar.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         summary: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The title or summary of the event.',
         },
         location: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The location of the event.',
         },
         startTime: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The start time of the event in ISO 8601 format.',
         },
         endTime: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The end time of the event in ISO 8601 format.',
         },
       },
@@ -45,22 +39,18 @@ export const personalAssistantTools: FunctionCall[] = [
     name: 'send_email',
     description: 'Sends an email to a specified recipient.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         recipient: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The email address of the recipient.',
         },
         subject: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The subject line of the email.',
         },
         body: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The body content of the email.',
         },
       },
@@ -73,17 +63,14 @@ export const personalAssistantTools: FunctionCall[] = [
     name: 'set_reminder',
     description: 'Sets a reminder for the user.',
     parameters: {
-      // FIX: Use `Type.OBJECT` instead of "OBJECT".
-      type: Type.OBJECT,
+      type: 'OBJECT',
       properties: {
         task: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The task for the reminder.',
         },
         time: {
-          // FIX: Use `Type.STRING` instead of "STRING".
-          type: Type.STRING,
+          type: 'STRING',
           description: 'The time for the reminder in ISO 8601 format.',
         },
       },
