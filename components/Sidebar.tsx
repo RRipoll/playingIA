@@ -11,8 +11,14 @@ const AVAILABLE_MODELS = [DEFAULT_LIVE_API_MODEL];
 
 export default function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useUI();
-  const { systemPrompt, model, voice, setSystemPrompt, setModel, setVoice } =
-    useSettings();
+  const {
+    systemPrompt,
+    model,
+    voice,
+    setSystemPrompt,
+    setModel,
+    setVoice,
+  } = useSettings();
   const { topics, toggleTopic } = usePrompts();
   const { connected } = useLiveAPIContext();
 

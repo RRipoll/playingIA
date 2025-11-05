@@ -25,6 +25,8 @@ const WelcomeScreen: React.FC = () => {
               <option value="daily-life">Daily Life</option>
               <option value="professional">Professional</option>
               <option value="creative">Creative</option>
+              <option value="travel">Travel</option>
+              <option value="health">Health</option>
             </select>
             <span className="icon">arrow_drop_down</span>
           </div>
