@@ -44,7 +44,7 @@ export const useUI = create<{
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 }>(set => ({
-  isSidebarOpen: true,
+  isSidebarOpen: false,
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
 }));
 
@@ -54,15 +54,19 @@ export const useUI = create<{
 export const usePrompts = create<{
   template: PromptTemplate;
   topics: PromptTopic[];
+  customTopics: string;
   setTemplate: (template: PromptTemplate) => void;
   toggleTopic: (topicName: string) => void;
+  setCustomTopics: (topics: string) => void;
 }>(set => ({
   template: 'daily-life',
   topics: promptContent['daily-life'].topics,
+  customTopics: '',
   setTemplate: (template: PromptTemplate) => {
     set({
       template,
       topics: promptContent[template].topics,
+      customTopics: '', // Reset custom topics when template changes
     });
     useSettings.getState().setSystemPrompt(promptContent[template].systemPrompt);
   },
@@ -74,6 +78,7 @@ export const usePrompts = create<{
           : topic,
       ),
     })),
+  setCustomTopics: (topics: string) => set({ customTopics: topics }),
 }));
 
 // FIX: Define and export the FunctionCall interface. This was missing, causing import errors.
@@ -94,8 +99,9 @@ export interface LiveClientToolResponse {
 }
 export interface GroundingChunk {
   web?: {
-    uri: string;
-    title: string;
+    // FIX: Make uri and title optional to match the SDK type.
+    uri?: string;
+    title?: string;
   };
 }
 export interface PronunciationFeedback {

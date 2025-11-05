@@ -18,9 +18,8 @@ const PopUp: React.FC<PopUpProps> = ({ onClose }) => {
         <p>Your personal AI tutor for improving pronunciation and conversation skills.</p>
         <p>To get started:</p>
         <ol>
-          <li><span className="icon">record_voice_over</span>Choose a conversation category on the main screen.</li>
-          <li><span className="icon">play_circle</span>Press the Play button to start streaming audio.</li>
-          <li><span className="icon">mic</span>Press the Microphone button and start speaking.</li>
+          <li><span className="icon">record_voice_over</span>Choose a conversation category and topics on the main screen.</li>
+          <li><span className="icon">mic</span>Press the Microphone button to start your conversation.</li>
         </ol>
         <button onClick={onClose}>Start Practicing</button>
       </div>

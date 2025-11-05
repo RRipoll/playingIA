@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useSettings, useUI, usePrompts } from '@/lib/state';
+import { useSettings, useUI } from '@/lib/state';
 import c from 'classnames';
 import { DEFAULT_LIVE_API_MODEL, AVAILABLE_VOICES } from '@/lib/constants';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
@@ -19,7 +19,6 @@ export default function Sidebar() {
     setModel,
     setVoice,
   } = useSettings();
-  const { topics, toggleTopic } = usePrompts();
   const { connected } = useLiveAPIContext();
 
   return (
@@ -65,31 +64,6 @@ export default function Sidebar() {
                 </select>
               </label>
             </fieldset>
-          </div>
-          <div className="sidebar-section">
-            <h4 className="sidebar-section-title">Conversation Topics</h4>
-            <div className="tools-list">
-              {topics.map(topic => (
-                <div key={topic.name} className="tool-item">
-                  <label className="tool-checkbox-wrapper">
-                    <input
-                      type="checkbox"
-                      id={`tool-checkbox-${topic.name}`}
-                      checked={topic.isEnabled}
-                      onChange={() => toggleTopic(topic.name)}
-                      disabled={connected}
-                    />
-                    <span className="checkbox-visual"></span>
-                  </label>
-                  <label
-                    htmlFor={`tool-checkbox-${topic.name}`}
-                    className="tool-name-text"
-                  >
-                    {topic.name}
-                  </label>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </aside>

@@ -62,7 +62,7 @@ const renderContent = (text: string) => {
 export default function StreamingConsole() {
   const { client, setConfig } = useLiveAPIContext();
   const { systemPrompt, voice } = useSettings();
-  const { topics } = usePrompts();
+  const { topics, customTopics } = usePrompts();
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showPopUp, setShowPopUp] = useState(true);
@@ -92,9 +92,16 @@ export default function StreamingConsole() {
       .filter(topic => topic.isEnabled)
       .map(topic => topic.name);
 
+    const customTopicsList = customTopics
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+
+    const allTopics = [...enabledTopics, ...customTopicsList];
+
     let finalSystemPrompt = systemPrompt;
-    if (enabledTopics.length > 0) {
-      finalSystemPrompt += `\n\nPlease focus the conversation on these topics: ${enabledTopics.join(
+    if (allTopics.length > 0) {
+      finalSystemPrompt += `\n\nPlease focus the conversation on these topics: ${allTopics.join(
         ', ',
       )}.`;
     }
@@ -123,7 +130,7 @@ export default function StreamingConsole() {
     };
 
     setConfig(config);
-  }, [setConfig, systemPrompt, topics, voice]);
+  }, [setConfig, systemPrompt, topics, voice, customTopics]);
 
   useEffect(() => {
     const { addTurn, updateLastTurn, updateTurnById } = useLogStore.getState();
@@ -173,7 +180,8 @@ export default function StreamingConsole() {
 
       const { turns, addTurn, updateLastTurn, updateTurnById } =
         useLogStore.getState();
-      const last = turns.at(-1);
+      // FIX: Replace .at(-1) with [length - 1] for broader TS compatibility.
+      const last = turns[turns.length - 1];
 
       if (last?.role === 'agent' && !last.isFinal) {
         const updatedTurn: Partial<ConversationTurn> = {
@@ -197,7 +205,8 @@ export default function StreamingConsole() {
 
     const handleTurnComplete = async () => {
       const { turns, updateTurnById } = useLogStore.getState();
-      const last = turns.at(-1);
+      // FIX: Replace .at(-1) with [length - 1] for broader TS compatibility.
+      const last = turns[turns.length - 1];
       if (last && !last.isFinal) {
         updateTurnById(last.id, { isFinal: true });
       }
@@ -458,7 +467,8 @@ Text to analyze: "${turn.text}"`;
                   <strong>Sources:</strong>
                   <ul>
                     {t.groundingChunks
-                      .filter(chunk => chunk.web)
+                      // FIX: Ensure that the chunk has a web property and a uri before rendering.
+                      .filter(chunk => chunk.web && chunk.web.uri)
                       .map((chunk, index) => (
                         <li key={index}>
                           <a

@@ -535,19 +535,28 @@ header .export-button {
 
 .mic-button {
   position: relative;
-  background-color: var(--accent-red);
+  background-color: var(--Neutral-20);
   z-index: 1;
-  color: black;
+  color: var(--Neutral-80);
   transition: all 0.2s ease-in;
 }
 
-.mic-button:focus {
-  border: 2px solid var(--Neutral-20);
-  outline: 2px solid var(--Red-500);
+.mic-button:hover {
+  background-color: var(--Neutral-30);
 }
 
-.mic-button:hover {
+.mic-button.connected {
+  background-color: var(--accent-red);
+  color: black;
+}
+
+.mic-button.connected:hover {
   background-color: var(--Red-400);
+}
+
+.mic-button.connected:focus {
+  border: 2px solid var(--Neutral-20);
+  outline: 2px solid var(--Red-500);
 }
 
 .mic-button:before {
