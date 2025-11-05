@@ -535,10 +535,15 @@ header .export-button {
 
 .mic-button {
   position: relative;
-  background-color: var(--accent-red);
+  background-color: var(--Neutral-20);
   z-index: 1;
-  color: black;
+  color: var(--Neutral-60);
   transition: all 0.2s ease-in;
+}
+
+.mic-button.connected {
+  background-color: var(--accent-red);
+  color: black;
 }
 
 .mic-button:focus {
@@ -547,6 +552,10 @@ header .export-button {
 }
 
 .mic-button:hover {
+  background-color: var(--Neutral-30);
+}
+
+.mic-button.connected:hover {
   background-color: var(--Red-400);
 }
 
@@ -720,43 +729,10 @@ header .export-button {
   letter-spacing: 0.5px;
 }
 
-.transcription-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .transcription-timestamp {
   font-size: 0.8rem;
   color: var(--gray-500);
   font-family: 'Roboto Mono', monospace;
-}
-
-.tts-play-button {
-  background: none;
-  border: none;
-  color: var(--gray-500);
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s, background-color 0.2s;
-}
-
-.tts-play-button .icon {
-  font-size: 20px;
-}
-
-.tts-play-button:hover:not(:disabled) {
-  color: var(--text);
-  background-color: var(--Neutral-20);
-}
-
-.tts-play-button:disabled {
-  cursor: not-allowed;
-  color: var(--gray-700);
 }
 
 .transcription-entry.user {
@@ -786,13 +762,6 @@ header .export-button {
   overflow-wrap: break-word;
 }
 
-.transcription-ipa-content {
-  color: var(--gray-500);
-  font-size: 1rem;
-  margin-top: 8px;
-  font-style: italic;
-}
-
 .transcription-entry.interim .transcription-text-content {
   opacity: 0.6;
 }
@@ -819,69 +788,6 @@ header .export-button {
   white-space: pre;
 }
 
-.pronunciation-feedback {
-  margin-top: 12px;
-  padding: 10px;
-  background-color: var(--Neutral-15);
-  border-radius: 8px;
-  border: 1px solid var(--Neutral-30);
-  font-size: 0.9rem;
-}
-
-.pronunciation-assessment {
-  color: var(--Neutral-80);
-  font-style: italic;
-}
-
-.word-feedback {
-  position: relative;
-  cursor: help;
-  border-bottom: 2px dotted transparent;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.accuracy-good {
-  /* No special styling for good words to keep it clean */
-}
-
-.accuracy-needs-improvement {
-  background-color: rgba(255, 165, 0, 0.15); /* Orange-ish */
-  border-bottom-color: rgba(255, 165, 0, 0.5);
-}
-
-.accuracy-incorrect {
-  background-color: rgba(255, 70, 0, 0.15); /* Red-ish */
-  border-bottom-color: rgba(255, 70, 0, 0.5);
-}
-
-.word-feedback::after {
-  content: attr(data-feedback);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  background-color: var(--Neutral-00);
-  color: var(--Neutral-90);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--Neutral-30);
-  font-size: 0.85rem;
-  white-space: pre-wrap;
-  width: max-content;
-  max-width: 250px;
-  text-align: left;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-  z-index: 10;
-  font-style: normal;
-  pointer-events: none;
-}
-
-.word-feedback:hover::after {
-  visibility: visible;
-  opacity: 1;
-}
 
 .counter-container {
   position: absolute;

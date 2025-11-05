@@ -7,6 +7,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
+ * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,37 +20,13 @@
  */
 
 import cn from 'classnames';
-
-import { memo, ReactNode, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { AudioRecorder } from '../../../lib/audio-recorder';
-import { useSettings, usePrompts, useLogStore } from '@/lib/state';
-
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
 
-export type ControlTrayProps = {
-  children?: ReactNode;
-};
-
-function ControlTray({ children }: ControlTrayProps) {
+function ControlTray() {
   const [audioRecorder] = useState(() => new AudioRecorder());
-  const [muted, setMuted] = useState(false);
-  const connectButtonRef = useRef<HTMLButtonElement>(null);
-
   const { client, connected, connect, disconnect } = useLiveAPIContext();
-
-  useEffect(() => {
-    // FIX: Cannot find name 'connectButton'. Did you mean 'connectButtonRef'?
-    if (!connected && connectButtonRef.current) {
-      // FIX: Cannot find name 'connectButton'. Did you mean 'connectButtonRef'?
-      connectButtonRef.current.focus();
-    }
-  }, [connected]);
-
-  useEffect(() => {
-    if (!connected) {
-      setMuted(false);
-    }
-  }, [connected]);
 
   useEffect(() => {
     const onData = (base64: string) => {
@@ -60,7 +37,7 @@ function ControlTray({ children }: ControlTrayProps) {
         },
       ]);
     };
-    if (connected && !muted && audioRecorder) {
+    if (connected) {
       audioRecorder.on('data', onData);
       audioRecorder.start();
     } else {
@@ -69,104 +46,33 @@ function ControlTray({ children }: ControlTrayProps) {
     return () => {
       audioRecorder.off('data', onData);
     };
-  }, [connected, client, muted, audioRecorder]);
+  }, [connected, client, audioRecorder]);
 
   const handleMicClick = () => {
     if (connected) {
-      setMuted(!muted);
+      disconnect();
     } else {
       connect();
     }
   };
 
-  const handleExportLogs = () => {
-    const { systemPrompt, model } = useSettings.getState();
-    const { template, topics } = usePrompts.getState();
-    const { turns } = useLogStore.getState();
-
-    const logData = {
-      configuration: {
-        model,
-        systemPrompt,
-        template,
-      },
-      topics,
-      conversation: turns.map(turn => ({
-        ...turn,
-        // Convert Date object to ISO string for JSON serialization
-        timestamp: turn.timestamp.toISOString(),
-      })),
-    };
-
-    const jsonString = JSON.stringify(logData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    a.href = url;
-    a.download = `conversation-logs-${timestamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const micButtonTitle = connected
-    ? muted
-      ? 'Unmute microphone'
-      : 'Mute microphone'
-    : 'Connect and start microphone';
-
-  const connectButtonTitle = connected ? 'Stop streaming' : 'Start streaming';
+    ? 'End conversation'
+    : 'Start conversation';
 
   return (
     <section className="control-tray">
-      <nav className={cn('actions-nav')}>
-        <button
-          className={cn('action-button mic-button')}
-          onClick={handleMicClick}
-          title={micButtonTitle}
-        >
-          {!muted ? (
-            <span className="material-symbols-outlined filled">mic</span>
-          ) : (
-            <span className="material-symbols-outlined filled">mic_off</span>
-          )}
-        </button>
-        <button
-          className={cn('action-button')}
-          onClick={handleExportLogs}
-          aria-label="Export Logs"
-          title="Export session logs"
-        >
-          <span className="icon">download</span>
-        </button>
-        <button
-          className={cn('action-button')}
-          onClick={useLogStore.getState().clearTurns}
-          aria-label="Reset Chat"
-          title="Reset session logs"
-        >
-          <span className="icon">refresh</span>
-        </button>
-        {children}
-      </nav>
-
-      <div className={cn('connection-container', { connected })}>
-        <div className="connection-button-container">
-          <button
-            ref={connectButtonRef}
-            className={cn('action-button connect-toggle', { connected })}
-            onClick={connected ? disconnect : connect}
-            title={connectButtonTitle}
-          >
-            <span className="material-symbols-outlined filled">
-              {connected ? 'pause' : 'play_arrow'}
-            </span>
-          </button>
-        </div>
-        <span className="text-indicator">Streaming</span>
-      </div>
+      <button
+        className={cn('action-button mic-button', { connected })}
+        onClick={handleMicClick}
+        title={micButtonTitle}
+      >
+        {connected ? (
+          <span className="material-symbols-outlined filled">mic</span>
+        ) : (
+          <span className="material-symbols-outlined filled">mic_off</span>
+        )}
+      </button>
     </section>
   );
 }

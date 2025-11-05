@@ -6,13 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import PopUp from '../popup/PopUp';
 import WelcomeScreen from '../welcome-screen/WelcomeScreen';
 // FIX: Import LiveServerContent to correctly type the content handler.
-import {
-  GoogleGenAI,
-  LiveConnectConfig,
-  Modality,
-  LiveServerContent,
-  Type,
-} from '@google/genai';
+import { LiveConnectConfig, Modality, LiveServerContent } from '@google/genai';
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
 import {
@@ -20,9 +14,7 @@ import {
   useLogStore,
   usePrompts,
   ConversationTurn,
-  PronunciationFeedback,
 } from '@/lib/state';
-import { base64ToArrayBuffer, decodeAudioData } from '@/lib/utils';
 
 const formatTimestamp = (date: Date) => {
   const pad = (num: number, size = 2) => num.toString().padStart(size, '0');
@@ -66,21 +58,6 @@ export default function StreamingConsole() {
   const turns = useLogStore(state => state.turns);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showPopUp, setShowPopUp] = useState(true);
-  const [ai, setAi] = useState<GoogleGenAI | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const [playingTurnId, setPlayingTurnId] = useState<string | null>(null);
-  const fetchingFeedbackRef = useRef(new Set<string>());
-
-
-  useEffect(() => {
-    const apiKey = process.env.GEMINI_API_KEY as string;
-    if (apiKey) {
-      setAi(new GoogleGenAI({ apiKey }));
-    } else {
-      console.error('Missing GEMINI_API_KEY');
-    }
-  }, []);
-
 
   const handleClosePopUp = () => {
     setShowPopUp(false);
@@ -126,7 +103,7 @@ export default function StreamingConsole() {
   }, [setConfig, systemPrompt, topics, voice]);
 
   useEffect(() => {
-    const { addTurn, updateLastTurn, updateTurnById } = useLogStore.getState();
+    const { addTurn, updateLastTurn } = useLogStore.getState();
 
     const handleInputTranscription = (text: string, isFinal: boolean) => {
       const turns = useLogStore.getState().turns;
@@ -142,8 +119,7 @@ export default function StreamingConsole() {
     };
 
     const handleOutputTranscription = (text: string, isFinal: boolean) => {
-      const { turns, addTurn, updateLastTurn, updateTurnById } =
-        useLogStore.getState();
+      const turns = useLogStore.getState().turns;
       const last = turns[turns.length - 1];
       if (last && last.role === 'agent' && !last.isFinal) {
         updateLastTurn({
@@ -151,10 +127,6 @@ export default function StreamingConsole() {
           isFinal,
         });
       } else {
-        // A new agent turn is starting. Finalize the previous user turn if it exists.
-        if (last && last.role === 'user' && !last.isFinal) {
-          updateTurnById(last.id, { isFinal: true });
-        }
         addTurn({ role: 'agent', text, isFinal });
       }
     };
@@ -171,9 +143,9 @@ export default function StreamingConsole() {
 
       if (!text && !groundingChunks) return;
 
-      const { turns, addTurn, updateLastTurn, updateTurnById } =
-        useLogStore.getState();
-      const last = turns.at(-1);
+      const turns = useLogStore.getState().turns;
+      // FIX: Replace unavailable Array.prototype.at() with array index access.
+      const last = turns[turns.length - 1];
 
       if (last?.role === 'agent' && !last.isFinal) {
         const updatedTurn: Partial<ConversationTurn> = {
@@ -187,19 +159,16 @@ export default function StreamingConsole() {
         }
         updateLastTurn(updatedTurn);
       } else {
-        // A new agent turn is starting. Finalize the previous user turn if it exists.
-        if (last && last.role === 'user' && !last.isFinal) {
-          updateTurnById(last.id, { isFinal: true });
-        }
         addTurn({ role: 'agent', text, isFinal: false, groundingChunks });
       }
     };
 
-    const handleTurnComplete = async () => {
-      const { turns, updateTurnById } = useLogStore.getState();
-      const last = turns.at(-1);
+    const handleTurnComplete = () => {
+      const turns = useLogStore.getState().turns;
+      // FIX: Replace unavailable Array.prototype.at() with array index access.
+      const last = turns[turns.length - 1];
       if (last && !last.isFinal) {
-        updateTurnById(last.id, { isFinal: true });
+        updateLastTurn({ isFinal: true });
       }
     };
 
@@ -222,182 +191,6 @@ export default function StreamingConsole() {
     }
   }, [turns]);
 
-  // Fetch pronunciation feedback for finalized user turns
-  useEffect(() => {
-    if (!ai) return;
-
-    const getPronunciationFeedback = async (turn: ConversationTurn) => {
-      if (fetchingFeedbackRef.current.has(turn.id)) return;
-      fetchingFeedbackRef.current.add(turn.id);
-      const { updateTurnById } = useLogStore.getState();
-
-      try {
-        // Set a loading state
-        updateTurnById(turn.id, {
-          pronunciationFeedback: {
-            overall_assessment: 'Analyzing pronunciation...',
-            words: [],
-          },
-        });
-
-        const responseSchema = {
-          type: Type.OBJECT,
-          properties: {
-            overall_assessment: {
-              type: Type.STRING,
-              description:
-                "A brief, encouraging overall assessment of the user's pronunciation.",
-            },
-            words: {
-              type: Type.ARRAY,
-              description:
-                "A word-by-word analysis of the user's pronunciation.",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  word: {
-                    type: Type.STRING,
-                    description: 'The word from the original text.',
-                  },
-                  accuracy: {
-                    type: Type.STRING,
-                    description:
-                      'Pronunciation accuracy: "good", "needs_improvement", or "incorrect".',
-                  },
-                  feedback: {
-                    type: Type.STRING,
-                    description:
-                      'Specific feedback for this word. If "good", this can be a simple encouragement.',
-                  },
-                },
-                required: ['word', 'accuracy', 'feedback'],
-              },
-            },
-          },
-          required: ['overall_assessment', 'words'],
-        };
-
-        const prompt = `You are an expert English pronunciation coach. Analyze the pronunciation of the following text from a non-native English speaker. Provide an overall assessment and a word-by-word breakdown of every word. Respond ONLY with a JSON object that conforms to the provided schema.
-
-Text to analyze: "${turn.text}"`;
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema,
-          },
-        });
-
-        const feedbackJson = JSON.parse(response.text) as PronunciationFeedback;
-        updateTurnById(turn.id, { pronunciationFeedback: feedbackJson });
-      } catch (error) {
-        console.error('Pronunciation feedback generation failed:', error);
-        updateTurnById(turn.id, { pronunciationFeedback: undefined });
-      } finally {
-        fetchingFeedbackRef.current.delete(turn.id);
-      }
-    };
-
-    const lastFinalizedUserTurn = turns
-      .slice()
-      .reverse()
-      .find(
-        t =>
-          t.role === 'user' &&
-          t.isFinal &&
-          t.text.trim() &&
-          !t.pronunciationFeedback,
-      );
-
-    if (lastFinalizedUserTurn) {
-      getPronunciationFeedback(lastFinalizedUserTurn);
-    }
-  }, [turns, ai]);
-
-
-  const handlePlayTTS = async (turn: ConversationTurn) => {
-    if (!ai || playingTurnId) return;
-    setPlayingTurnId(turn.id);
-    const { updateTurnById } = useLogStore.getState();
-
-    try {
-      // Fetch IPA if it doesn't exist for the current turn
-      if (!turn.ipa && turn.text.trim()) {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `Provide the International Phonetic Alphabet (IPA) transcription for the following English text. Return only the IPA string, without any surrounding text, labels, or markdown formatting. For example, for "hello world", return "/həˈloʊ wɜːrld/". Text: "${turn.text}"`,
-        });
-        const ipa = response.text.trim();
-        if (ipa) {
-          updateTurnById(turn.id, { ipa });
-        }
-      }
-
-      // Generate and play TTS audio
-      const ttsVoice = turn.role === 'user' ? 'Puck' : voice;
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: turn.text }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: ttsVoice },
-            },
-          },
-        },
-      });
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        }
-        const audioCtx = audioContextRef.current;
-        const audioData = base64ToArrayBuffer(base64Audio);
-        const audioBuffer = await decodeAudioData(audioData, audioCtx, 24000, 1);
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-        source.start();
-        source.onended = () => setPlayingTurnId(null);
-      } else {
-        setPlayingTurnId(null);
-      }
-    } catch (error) {
-      console.error("TTS/IPA generation failed:", error);
-      setPlayingTurnId(null);
-    }
-  };
-
-  const renderFeedbackText = (turn: ConversationTurn) => {
-    if (
-      !turn.pronunciationFeedback?.words ||
-      turn.pronunciationFeedback.words.length === 0
-    ) {
-      return renderContent(turn.text);
-    }
-
-    return (
-      <>
-        {turn.pronunciationFeedback.words.map((wordInfo, index) => (
-          <span
-            key={index}
-            className={`word-feedback accuracy-${wordInfo.accuracy.replace(
-              /_/g,
-              '-',
-            )}`}
-            data-feedback={wordInfo.feedback}
-          >
-            {wordInfo.word}{' '}
-          </span>
-        ))}
-      </>
-    );
-  };
-
-
   return (
     <div className="transcription-container">
       {showPopUp && <PopUp onClose={handleClosePopUp} />}
@@ -419,46 +212,20 @@ Text to analyze: "${turn.text}"`;
                       ? 'Agent'
                       : 'System'}
                 </div>
-                <div className="transcription-meta">
-                  <div className="transcription-timestamp">
-                    {formatTimestamp(t.timestamp)}
-                  </div>
-                  {(t.role === 'agent' || t.role === 'user') && t.isFinal && t.text.trim() && (
-                    <button
-                      className="tts-play-button"
-                      onClick={() => handlePlayTTS(t)}
-                      disabled={!!playingTurnId}
-                      aria-label="Play audio and show IPA for this message"
-                      title="Read aloud and show IPA"
-                    >
-                      <span className="icon">
-                        {playingTurnId === t.id ? 'hourglass_top' : 'volume_up'}
-                      </span>
-                    </button>
-                  )}
+                <div className="transcription-timestamp">
+                  {formatTimestamp(t.timestamp)}
                 </div>
               </div>
               <div className="transcription-text-content">
-                {t.role === 'user' && t.pronunciationFeedback
-                  ? renderFeedbackText(t)
-                  : renderContent(t.text)}
+                {renderContent(t.text)}
               </div>
-              {t.ipa && (
-                <div className="transcription-ipa-content">{t.ipa}</div>
-              )}
-              {t.role === 'user' && t.pronunciationFeedback?.overall_assessment && (
-                <div className="pronunciation-feedback">
-                  <div className="pronunciation-assessment">
-                    {t.pronunciationFeedback.overall_assessment}
-                  </div>
-                </div>
-              )}
               {t.groundingChunks && t.groundingChunks.length > 0 && (
                 <div className="grounding-chunks">
                   <strong>Sources:</strong>
                   <ul>
                     {t.groundingChunks
-                      .filter(chunk => chunk.web)
+                      // FIX: Filter for chunks that have a web uri to ensure links are valid.
+                      .filter(chunk => chunk.web?.uri)
                       .map((chunk, index) => (
                         <li key={index}>
                           <a
