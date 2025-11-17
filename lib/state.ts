@@ -113,6 +113,15 @@ export interface PronunciationFeedback {
   }>;
 }
 
+export interface GrammarFeedback {
+  overall_assessment: string;
+  corrections: Array<{
+    original: string;
+    corrected: string;
+    explanation: string;
+  }>;
+}
+
 export interface ConversationTurn {
   id: string;
   timestamp: Date;
@@ -124,6 +133,7 @@ export interface ConversationTurn {
   groundingChunks?: GroundingChunk[];
   ipa?: string;
   pronunciationFeedback?: PronunciationFeedback;
+  grammarFeedback?: GrammarFeedback;
 }
 
 export const useLogStore = create<{

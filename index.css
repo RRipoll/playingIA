@@ -1285,3 +1285,56 @@ form button:first-of-type {
 .grounding-chunks a:hover {
   text-decoration: underline;
 }
+
+.grammar-feedback {
+  margin-top: 12px;
+  padding: 10px;
+  background-color: var(--Neutral-15);
+  border-radius: 8px;
+  border: 1px solid var(--Neutral-30);
+  font-size: 0.9rem;
+}
+
+.grammar-feedback h4 {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--accent-blue-headers);
+  margin-bottom: 8px;
+}
+
+.grammar-assessment {
+  color: var(--Neutral-80);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.grammar-corrections-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grammar-corrections-list li {
+  line-height: 1.4;
+}
+
+.grammar-original {
+  text-decoration: line-through;
+  color: var(--Red-400);
+}
+
+.grammar-corrected {
+  color: var(--Green-500);
+  font-weight: 500;
+}
+
+.grammar-explanation {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--Neutral-30);
+}

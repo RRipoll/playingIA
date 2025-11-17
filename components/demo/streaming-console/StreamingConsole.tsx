@@ -21,6 +21,7 @@ import {
   usePrompts,
   ConversationTurn,
   PronunciationFeedback,
+  GrammarFeedback,
 } from '@/lib/state';
 import { base64ToArrayBuffer, decodeAudioData } from '@/lib/utils';
 
@@ -344,6 +345,70 @@ Text to analyze: "${turn.text}"`;
         }
       }
 
+      // Fetch grammar feedback if it doesn't exist for the current user turn
+      if (turn.role === 'user' && !turn.grammarFeedback && turn.text.trim()) {
+        updateTurnById(turn.id, {
+          grammarFeedback: {
+            overall_assessment: 'Analyzing grammar...',
+            corrections: [],
+          },
+        });
+
+        const responseSchema = {
+          type: Type.OBJECT,
+          properties: {
+            overall_assessment: {
+              type: Type.STRING,
+              description: "A brief, encouraging overall assessment of the user's grammar.",
+            },
+            corrections: {
+              type: Type.ARRAY,
+              description: "A list of specific grammar corrections. If there are no errors, this should be an empty array.",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  original: {
+                    type: Type.STRING,
+                    description: 'The original phrase with the grammatical error.',
+                  },
+                  corrected: {
+                    type: Type.STRING,
+                    description: 'The grammatically correct version of the phrase.',
+                  },
+                  explanation: {
+                    type: Type.STRING,
+                    description: 'A simple explanation of the grammar rule that was broken.',
+                  },
+                },
+                required: ['original', 'corrected', 'explanation'],
+              },
+            },
+          },
+          required: ['overall_assessment', 'corrections'],
+        };
+
+        const prompt = `You are an expert English grammar coach. Analyze the grammar of the following text from a non-native English speaker. Provide an overall assessment and a list of corrections. If the text is grammatically perfect, provide a positive assessment and an empty array for corrections. Respond ONLY with a JSON object that conforms to the provided schema.
+
+Text to analyze: "${turn.text}"`;
+
+        try {
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema,
+            },
+          });
+          const feedbackJson = JSON.parse(response.text) as GrammarFeedback;
+          updateTurnById(turn.id, { grammarFeedback: feedbackJson });
+        } catch (error) {
+          console.error('Grammar feedback generation failed:', error);
+          updateTurnById(turn.id, { grammarFeedback: undefined });
+        }
+      }
+
+
       // Generate and play TTS audio
       const ttsVoice = turn.role === 'user' ? 'Puck' : voice;
       const response = await ai.models.generateContent({
@@ -375,7 +440,8 @@ Text to analyze: "${turn.text}"`;
         setPlayingTurnId(null);
       }
     } catch (error) {
-      console.error("TTS/IPA generation failed:", error);
+      console.error("TTS/IPA/Grammar generation failed:", error);
+      updateTurnById(turn.id, { ipa: undefined, grammarFeedback: undefined });
       setPlayingTurnId(null);
     }
   };
@@ -437,8 +503,8 @@ Text to analyze: "${turn.text}"`;
                       className="tts-play-button"
                       onClick={() => handlePlayTTS(t)}
                       disabled={!!playingTurnId}
-                      aria-label="Play audio and show IPA for this message"
-                      title="Read aloud and show IPA"
+                      aria-label={t.role === 'user' ? "Play audio, show IPA, and check grammar for this message" : "Play audio and show IPA for this message"}
+                      title={t.role === 'user' ? "Read aloud, show IPA & check grammar" : "Read aloud and show IPA"}
                     >
                       <span className="icon">
                         {playingTurnId === t.id ? 'hourglass_top' : 'volume_up'}
@@ -460,6 +526,27 @@ Text to analyze: "${turn.text}"`;
                   <div className="pronunciation-assessment">
                     {t.pronunciationFeedback.overall_assessment}
                   </div>
+                </div>
+              )}
+              {t.role === 'user' && t.grammarFeedback && (
+                <div className="grammar-feedback">
+                  <h4>Grammar Feedback</h4>
+                  <div className="grammar-assessment">
+                    {t.grammarFeedback.overall_assessment}
+                  </div>
+                  {t.grammarFeedback.corrections.length > 0 && (
+                    <ul className="grammar-corrections-list">
+                      {t.grammarFeedback.corrections.map((c, i) => (
+                        <li key={i}>
+                          <p>
+                            <span className="grammar-original">{c.original}</span> →{' '}
+                            <span className="grammar-corrected">{c.corrected}</span>
+                          </p>
+                          <p className="grammar-explanation">{c.explanation}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
               {t.groundingChunks && t.groundingChunks.length > 0 && (
